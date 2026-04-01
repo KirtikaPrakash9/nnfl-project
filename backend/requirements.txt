@@ -1,0 +1,9 @@
+# FastAPI server
+fastapi>=0.115.0,<0.136.0
+uvicorn[standard]>=0.29.0,<0.43.0
+
+# ML inference
+# Pin below 2.16 to avoid Keras 3 compatibility issues with the legacy model.h5
+tensorflow-cpu>=2.15.0,<2.16.0
+numpy>=1.24.0,<2.0.0
+h5py>=3.10.0,<4.0.0
