@@ -13,18 +13,26 @@ const MP_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629"
 // Minimum ms between consecutive predict calls (sliding-window throttle)
 const PREDICT_THROTTLE_MS = 500;
 
+// ── Types ──────────────────────────────────────────────────────────────────
+
+type Landmark3D = { x: number; y: number; z: number };
+type Landmark3DV = Landmark3D & { visibility?: number };
+
+interface HolisticResults {
+  poseLandmarks?: Landmark3DV[];
+  faceLandmarks?: Landmark3D[];
+  leftHandLandmarks?: Landmark3D[];
+  rightHandLandmarks?: Landmark3D[];
+  image: CanvasImageSource;
+}
+
 // ── Keypoint extraction — mirrors the Python MediapipeHandler.extract_keypoints
 // Pose:  33 × 4 = 132   (x, y, z, visibility)
 // Face: 468 × 3 = 1404  (x, y, z)
 // LH:    21 × 3 = 63    (x, y, z)
 // RH:    21 × 3 = 63    (x, y, z)
 // Total: 1662
-function extractKeypoints(results: {
-  poseLandmarks?: Array<{ x: number; y: number; z: number; visibility?: number }>;
-  faceLandmarks?: Array<{ x: number; y: number; z: number }>;
-  leftHandLandmarks?: Array<{ x: number; y: number; z: number }>;
-  rightHandLandmarks?: Array<{ x: number; y: number; z: number }>;
-}): number[] {
+function extractKeypoints(results: HolisticResults): number[] {
   const pose = results.poseLandmarks
     ? results.poseLandmarks.flatMap((p) => [p.x, p.y, p.z, p.visibility ?? 0])
     : new Array(33 * 4).fill(0);
@@ -44,7 +52,7 @@ function extractKeypoints(results: {
   return [...pose, ...face, ...lh, ...rh];
 }
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// ── Component state types ──────────────────────────────────────────────────
 
 type Status = "loading" | "ready" | "detecting" | "error";
 
@@ -125,7 +133,7 @@ export default function SignDetector({ defaultSigns }: Props) {
           minTrackingConfidence: 0.5,
         });
 
-        holistic.onResults(async (results: Parameters<typeof extractKeypoints>[0] & { image: CanvasImageSource }) => {
+        holistic.onResults(async (results: HolisticResults) => {
           if (cancelled) return;
           const canvas = canvasRef.current;
           if (!canvas) return;
